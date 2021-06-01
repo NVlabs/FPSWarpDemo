@@ -24,17 +24,141 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 "use strict"                      // Execute this code in "strict mode"
 
+const queryString = window.location.search;
+const urlParams = new URLSearchParams(queryString);
+
+// Experiment Configuration
+var trainingTargets = 25;           // Number of trials to perform as training (at no latency)
+var targetsPerCondition = 15;       // Number of trials to perform per latency conditions
+
+// Latency conditions in ms, ending in 'W' indicates a warp
+// 'T' is the 0-latency training session(s)
+var conditionsToRun = ["T", "0", "80", "80W"];
+
+var inTraining = true;              // Start in training mode
+var sandboxMode = false;            // Developer mode flag (direct to sandbox mode)
+var randomizeOrder = false;         // Randomize session order
+
+var defaultFrameRateHz = 60;        // Assumed default frame rate
+
+// Update based on URL parameters
+if(urlParams.has('frameRateHz')) { defaultFrameRateHz = Number(urlParams.get('frameRateHz')); }
+if(urlParams.has('trainingTargets')){ trainingTargets = urlParams.get('trainingTargets'); }
+if(urlParams.has('targetsPerCondition')){ targetsPerCondition = urlParams.get('targetsPerCondition'); }
+if(urlParams.has('conditions')){ conditionsToRun = urlParams.get('conditions').split(','); }
+if(urlParams.has('randomizeOrder')) { randomizeOrder = urlParams.get('randomizeOrder'); }
+if(urlParams.has('mode')) { sandboxMode = urlParams.get('mode') == 'sandbox'}
+
+if(sandboxMode) {                       // Developer overrides for testing (comes from configuration.js)
+  conditionsToRun = [];             // Empty array goes straight into sandbox mode
+  inTraining = false;               // Leave training mode
+}
+
+
+// Results arrays
+var avgCompTimeResults = {}; 
+var accuracyResults = {};  
+
+var conditionIdx = -1;              // Index of current condition in latency conditions
+var expComplete = false;
+
 // Frame timing information
-const numFrameTimes = 100;        // Number of frame times to store
-var frameTimeValid = false;       // Has the frame time converged?
-var frameTimes = [];              // Recent frame times
+var frameTimeValid = false;         // Has the frame time converged?
+var frameTimes = [];                // Recent frame times
+const numFrameTimes = 100;          // Number of frame times to store
+
+if(randomizeOrder){ // Shuffle the conditions array?
+  conditionsToRun.sort(() => Math.random() - 0.5);     
+  console.log(conditionsToRun);     // Log order to console
+}
+
+const sensitivitySlider = document.getElementById("sensSlider");
+const sensitivityDiv = document.getElementById("sensSliderDiv");
+sensitivitySlider.oninput = function() {
+  config.player.mouseSensitivity = this.value;
+  rawInputState.mouseSensitivity = this.value;
+}
+
+var frames_to_delay;
+var nextCondition = function(){
+  conditionIdx += 1;
+  if(conditionIdx >= conditionsToRun.length){
+    dat.GUI.toggleHide();                             // Show "sandbox" controls
+    sensitivityDiv.style.visibility = 'hidden';       // Hide the sensitivity slider (now in sandbox controls)
+    expComplete = true;
+    if(conditionsToRun.length > 2) showResults();    // This is specific to 3 condition approach
+  }
+  else{
+    const nextCondition = conditionsToRun[conditionIdx];
+    var delay_ms;
+    if(nextCondition == 'T'){               // Start of training condition
+      sensitivityDiv.style.visibility = 'visible';
+      inTraining = true;
+      delay_ms = 0;
+      config.render.latewarp = false;
+    }
+    else if(nextCondition.endsWith('W')){   // Warp condition
+      sensitivityDiv.style.visibility = 'hidden';
+      inTraining = false;
+      config.render.latewarp = true;
+      delay_ms = parseFloat(nextCondition.substring(0, nextCondition.length-1))
+    }
+    else {                                  // Latency condition
+      sensitivityDiv.style.visibility = 'hidden';
+      inTraining = false;
+      config.render.latewarp = false; 
+      delay_ms = parseFloat(nextCondition);
+    }
+
+    updateBanner();
+
+    if(!frameTimeValid) console.warn('Frame time profiling is not complete, assuming %fHz frame rate!', defaultFrameRateHz);
+    const frame_time = frameTimeValid ? frameTimes.avg() : 1000 / defaultFrameRateHz;   // Get the average frame time (assume 60Hz if not yet measured, fine as first condition is 0 ms of latency target)
+    frames_to_delay = Math.round(delay_ms / frame_time)
+
+    config.render.frameDelay = frames_to_delay;   // Update the latency condition
+    rawInputState.frameDelay = frames_to_delay;
+  }
+  drawReticle();
+}
+
+const lowlatresult = document.getElementById("lowlatresult");
+const highlatresult = document.getElementById("highlatresult");
+const warpresult = document.getElementById("warpresult");
+const latdiffresult = document.getElementById("latdiffresult");
+const warpdiffresult = document.getElementById("warpdiffresult");
+
+var showResults = function(){
+  const sortedConds = Object.keys(avgCompTimeResults).sort();                   // This should sort low latency, high latency, high latency w/ warp
+  const lowLat = sortedConds[0]; const highLat = sortedConds[1]; const warp = sortedConds[2];
+
+  const lowLatCT = avgCompTimeResults[lowLat]; const highLatCT = avgCompTimeResults[highLat]; const warpCT = avgCompTimeResults[warp];
+  const lowLatAcc = accuracyResults[lowLat]; const highLatAcc = accuracyResults[highLat]; const warpAcc = accuracyResults[warp];
+
+  const latDiff = frames_to_delay * frameTimes.avg();
+  lowlatresult.innerHTML = `<h1>Minimum Latency</h1><p>&nbsp;</p><p>Avg Completion Time: ${lowLatCT.toFixed(3)} s</p><p>Accuracy: ${lowLatAcc.toFixed(1)}%</p>`;
+  highlatresult.innerHTML = `<h1>${frames_to_delay} frames of Latency</h1><h2>(Average latency of ${latDiff.toFixed(1)}ms)</h2><p>Avg Completion Time: ${highLatCT.toFixed(3)} s</p><p>Accuracy: ${highLatAcc.toFixed(1)}%</p>`;
+  warpresult.innerHTML = `<h1>Late Warp</h1><p>&nbsp;</p><p>Avg Completion Time: ${warpCT.toFixed(3)} s</p><p>Accuracy: ${warpAcc.toFixed(1)}%</p>`;
+  
+  const lat_dt = 1000 * (highLatCT - lowLatCT); const lat_dAcc = lowLatAcc - highLatAcc;
+  latdiffresult.innerHTML = `<p>${lat_dt.toFixed(1)} ms increase average task time</p><p>${lat_dAcc.toFixed(1)}% reduction in accuracy</p>`;
+  
+  const warp_dt = 1000 * (highLatCT - warpCT); const warp_dAcc = warpAcc - highLatAcc;
+  warpdiffresult.innerHTML = `<p>${warp_dt.toFixed(1)} ms improvement of avearge task time</p><p>${warp_dAcc.toFixed(1)}% improvement in accuracy</p>`;
+
+  results.style.visibility = 'visible';
+  if (fpsControls.enabled)
+    rawInputState.enable(false);
+  fpsControls.enabled = false;
+  bannerDiv.style.visibility = 'hidden';
+}
 
 // Configuration
 var config = { 
-  
+
   render : {
     setFPS : false,               // Allow in application FPS setting (changes animation approach!)
-    frameRate : 60,               // Frame rate to use (if setFPS is true only)
+    frameRate : defaultFrameRateHz,      // Frame rate to use (if setFPS is true only)
     frameDelay: 0,                // Frame delay to apply to incoming user events
     hFov : 103,                   // Horizontal camera field of view
     showStatistics : false,       // Show rendering statistics (frame rate/time and memory widget)
@@ -62,8 +186,8 @@ var config = {
   scene : {
     skyColor : '#c6defa',         // Skybox color
     useCubeMapSkyBox : false,     // Skybox use cube map?
-    width : 1000,                 // Width of the scene
-    depth : 1000,                 // Depth of the scene
+    width : 400,                 // Width of the scene
+    depth : 400,                 // Depth of the scene
     floorColor: '#756b5a',        // Color of the floor
     
     fog : {                       // Fog parameters
@@ -78,12 +202,12 @@ var config = {
     },
     
     boxes : {                     // Boxes (map geometry) configuration
-      count: 200,                 // Number of boxes to create per scene
+      count: 50,                 // Number of boxes to create per scene
       minHeight: 20,              // Minimum box height
       maxHeight: 100,             // Maximum box height
       width : 20,                 // Box width (same for all)
       depth : 20,                 // Box depth (same for all)
-      distanceRange : 500,        // Range of distances over which to spawn boxes
+      distanceRange : 100,        // Range of distances over which to spawn boxes
       minDistanceToPlayer: 80,    // Minimum distance from any box center to player spawn position (origin)
       color: '#ffffff',           // Base color for boxes
       colorScaleRange: 0.5        // Amount to allow randomized scaling of color for each box
@@ -91,10 +215,10 @@ var config = {
   },
 
   player : {
-    speed : 500,                  // Speed of player motion
+    speed : 0,                    // Speed of player motion
     mouseSensitivity : 0.2,       // Mouse sensitivty for view direction
     height : 5,                   // Player view height
-    jumpHeight : 250,             // Player jump height
+    jumpHeight : 0,               // Player jump height
     collisionDetection : true,    // Perform collision detection within the scene? 
     collisionDistance : 3,        // Player collision distance (set to 0 for no collision)
   },
@@ -111,10 +235,10 @@ var config = {
 
   targets : {   
     count: 1,                     // Number of simultaneous targets         
-    minSize : 0.5,                // Minimum target size (uniform random in range)
-    maxSize : 3,                  // Maxmium target size (uniform random in range)
-    minSpeed: 5,                  // Minimum target speed (uniform random in range)
-    maxSpeed : 15,                // Maximum target speed (uniform random in range)
+    minSize : 0.5,                  // Minimum target size (uniform random in range)
+    maxSize : 1,                  // Maxmium target size (uniform random in range)
+    minSpeed: 8,                  // Minimum target speed (uniform random in range)
+    maxSpeed : 12,                // Maximum target speed (uniform random in range)
     minChangeTime : 1,            // Minimum target direction change time (uniform random in range)
     maxChangeTime : 3,            // Maximum target direction change tiem (uniform random in range)
     fullHealthColor : '#00ff00',  // Color for full health target
@@ -516,6 +640,7 @@ THREE.FirstPersonControls = function ( camera, scene, jumpHeight = config.player
 };
 
 const instructions = document.getElementById("instructions");   // Get instructions division (overlay when FPS controls aren't enabled)
+const results = document.getElementById("results");             // Get results division (overlay at end of controlled trials)
 
 var havePointerLock = 'pointerLockElement' in document || 'mozPointerLockElement' in document || 'webkitPointerLockElement' in document;      // Check for pointer lock option
 if ( havePointerLock ) {
@@ -537,7 +662,7 @@ if ( havePointerLock ) {
       fpsControls.enabled = false;
       instructions.style.display = '-webkit-box';
     }
-    dat.GUI.toggleHide();
+    //dat.GUI.toggleHide();
   };
 
   /**
@@ -593,9 +718,31 @@ else {    // Let the user know their browser doesn't support pointer lock
 var keyDownHandler = function (event) {
   switch ( event.keyCode ) {
     case 82:  // R key press
-      resetBannerStats();
+      if(expComplete) resetBannerStats();
       break;
-  }
+    case 16:  // Shift key press
+      if(results.style.visibility == 'visible'){
+        if (!fpsControls.enabled)
+          rawInputState.enable(true);
+        fpsControls.enabled = true;
+        bannerDiv.style.visibility = 'visible';
+        results.style.visibility = 'hidden';
+      }
+      break;
+    case 38: // Up arrow press
+      if(inTraining){
+        // Allow changing sensitivity in
+        sensitivitySlider.stepUp(1);
+        sensitivitySlider.oninput();
+      }
+      break;
+    case 40: // Down arrow press
+      if(inTraining){
+        sensitivitySlider.stepDown(1);
+        sensitivitySlider.oninput();
+      }
+      break;
+    }
 
 }
 document.addEventListener( 'keydown', keyDownHandler, false);
@@ -1119,13 +1266,30 @@ Array.prototype.avg = function() {
 /**
  * Update the score banner
  */
+
+const beginHeader = document.getElementById('beginHeader');
+const resumeHeader = document.getElementById('resumeHeader');
+const trainingInstructions = document.getElementById("trainingInstructions");
+const sandboxInstructions = document.getElementById('sandboxInstructions');
+
 function updateBanner() {
-  if (referenceTarget) {bannerDiv.innerHTML =  '<h1>Click to destroy the target!</h1>'; }
-  else if(targets_destroyed == 0) { bannerDiv.innerHTML = '<h1>Destroyed: 0</h1><h1>Avg Time: N/A</h1><h1>Accuracy: N/A</h1>'; }
-  else { 
-    const time_per_target = target_times.avg();
-    const accuracy = 100*hits / shots;
-    bannerDiv.innerHTML = `<h1>Destroyed: ${targets_destroyed}</h1><h1>Avg Time: ${time_per_target.toFixed(3)}s</h1><h1>Accuracy: ${accuracy.toFixed(1)}%</h1>`; 
+  if (referenceTarget) {bannerDiv.innerHTML = '<h1>Click to destroy the red target to begin!</h1>'; }
+  else if(!expComplete){    // In experiment
+    const targetsRemaining = (inTraining ? trainingTargets : targetsPerCondition) - targets_destroyed;
+    const targetTypeStr = inTraining ? 'training ' : '';
+    bannerDiv.innerHTML = `<h1>${targetsRemaining} ${targetTypeStr}targets remaining</h1>`;
+    beginHeader.style.visibility = 'hidden';
+    resumeHeader.style.visibility = 'visible';
+    trainingInstructions.style.visibility = inTraining ? 'visible' : 'hidden';
+  }
+  else{   // Sandbox mode
+    if(targets_destroyed == 0) { bannerDiv.innerHTML = '<h2>Destroyed: 0</h2><h2>Avg Time: N/A</h2><h2>Accuracy: N/A</h2>'; }
+    else { 
+      const time_per_target = target_times.avg();
+      const accuracy = 100*hits / shots;
+      bannerDiv.innerHTML = `<h2>Destroyed: ${targets_destroyed}</h2><h2>Avg Time: ${time_per_target.toFixed(3)}s</h2><h2>Accuracy: ${accuracy.toFixed(1)}%</h2>`; 
+    }
+    sandboxInstructions.style.visibility = 'visible';
   }
 }
 
@@ -1144,6 +1308,7 @@ function resetBannerStats() {
  */
 window.onload = function() {
  makeGUI();
+ dat.GUI.toggleHide();
  bannerDiv.style.visibility = config.render.showBanner ? 'visible' : 'hidden';
 };
 
@@ -1156,6 +1321,7 @@ function onWindowResize() {
   const aspect = w / h;
 
   renderer.setSize(w, h);
+  warpresult.width = w;  warpresult.height = h;
   
   camera.aspect = aspect; 
   camera.updateProjectionMatrix();
@@ -1479,12 +1645,11 @@ var rawInputState;                        // The inupt delay queue is between th
 var particles = new Array();              // Empty particles array
 
 var renderedImage = new THREE.WebGLMultisampleRenderTarget(window.innerWidth, window.innerHeight, {
-  format: THREE.RGBFormat,
-    stencilBuffer: false,
-    depthBuffer: true,
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.NearestFilter
-  });
+  stencilBuffer: false,
+  depthBuffer: true,
+  minFilter: THREE.LinearFilter,
+  magFilter: THREE.NearestFilter
+});
 
 var warpTransform = new THREE.Matrix4();
 var warpScene = new THREE.Scene();
@@ -1553,6 +1718,8 @@ function init() {
   drawReticle();
   drawC2P();
 
+  nextCondition();
+
   warpScene.add(warpQuad);
   warpScene.add(warpCamera);
 }
@@ -1620,7 +1787,17 @@ function animate() {
               else {
                 targets_destroyed += 1;
                 target_times.push(intersect.object.duration);
-                spawnTarget();     // Replace this target with another like it
+                var newCondition = false;
+                if(((inTraining && targets_destroyed >= trainingTargets) || (!inTraining && targets_destroyed >= targetsPerCondition)) && !expComplete){
+                  // Advance to next condition
+                  const currCond = conditionsToRun[conditionIdx];
+                  avgCompTimeResults[currCond] = target_times.avg();
+                  accuracyResults[currCond] = 100*hits / shots;
+                  resetBannerStats();
+                  nextCondition();
+                  newCondition = true;
+                }
+                spawnTarget(newCondition);     // Replace this target with another like it
               }
             }
           }

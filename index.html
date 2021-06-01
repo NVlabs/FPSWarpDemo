@@ -57,6 +57,176 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.-->
         text-shadow: 1px 1px 1px #9E9E9E;
     }
 
+    #resumeHeader {
+        visibility: hidden;
+    }
+
+    #sandboxInstructions {
+        visibility: hidden;
+    }
+
+    #results {
+        visibility: hidden;
+        width:70%;
+        height: 40%;
+        left: 15%;
+        top: 30%;
+    
+        text-shadow: 1px 1px 1px #9E9E9E;
+        position: absolute;
+        background-color: rgba(0,0,0,0.5);
+
+        display: -webkit-box;
+        display: -moz-box;
+        display: box;
+
+        -webkit-box-orient: horizontal;
+        -moz-box-orient: horizontal;
+        box-orient: horizontal;
+
+        -webkit-box-pack: center;
+        -moz-box-pack: center;
+        box-pack: center;
+
+        -webkit-box-align: center;
+        -moz-box-align: center;
+        box-align: center;
+
+        color: #ffffff;
+        text-align: center;
+        font-family: 'Trebuchet MS';
+        font-size: 14px;
+        line-height: 24px;
+    }
+
+    #lowlatresult {
+        top:0;
+        left: 0;
+        position: absolute;
+        width: 33%;
+        height: 50%;
+
+        color: #FFF;
+        text-shadow: 1px 1px 1px #9E9E9E;
+        text-align: center;
+        font-family: 'Trebuchet MS';
+        font-size: 18px;
+    }
+
+    #highlatresult {
+        top:0;
+        left:33%;
+        position: absolute;
+        width: 33%;
+        height: 50%;
+
+        color: #FF0000;
+        text-shadow: 1px 1px 1px #AA0000;
+        text-align: center;
+        font-family: 'Trebuchet MS';
+        font-size: 18px;
+    }
+
+    #warpresult {
+        top:0;
+        left:66%;
+        position: absolute;
+        width: 33%;
+        height: 50%;
+
+        color: #76B900;
+        text-shadow: 1px 1px 1px #588a00;
+        text-align: center;
+        font-family: 'Trebuchet MS';
+        font-size: 18px;
+    }
+
+    #latdiffresult {
+        position: absolute;
+        left: 0;
+        width: 50%;
+        height: 30%;
+        bottom: 20%;
+
+        text-align: center;
+        font-family: 'Trebuchet MS';
+        font-size: 20px;
+    }
+
+    #warpdiffresult {
+        position: absolute;
+        left: 50%;
+        width: 50%;
+        height: 30%;
+        bottom: 20%;
+
+        text-align: center;
+        font-family: 'Trebuchet MS';
+        font-size: 20px;
+    }
+
+    #continuePrompt {
+        position: absolute;
+        width: 100%;
+        height: 10%;
+        bottom: 5%;
+
+        text-align: center;
+        font-family: 'Trebuchet MS';
+        font-size: 20px;
+    }
+
+    .custom_slidercontainer{
+        position: absolute;
+        width: 100%;
+        top: 10%;
+    }
+
+    .custom_slidercontainer p {
+        text-align: center;
+        font-family: 'Trebuchet MS';
+        font-size: 20px;
+        color: #FFF;
+        text-shadow: 1px 1px 1px #9E9E9E;
+    }
+
+    .custom_slider{
+        -webkit-appearance: none;
+
+        position: absolute;
+        left: 25%;
+
+        width: 50%;
+        height: 10px;
+        border-radius: 5px;  
+
+        background: #000;
+        opacity: 0.3;
+        transition: opacity .2s;
+    }
+
+    .custom_slider:hover{
+        opacity: 1.0;
+    }
+
+    .custom_slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 25px;
+        height: 25px;
+        background: #76b900;
+        cursor: pointer;
+        border-radius: 50%;
+    }
+
+    .custom_slider::-moz-range-thumb {
+        width: 25px;
+        height: 25px;
+        background: #76b900;
+        cursor: pointer;
+        border-radius: 50%;
+    }
+
     #banner {
         position: absolute;
         display: inline;
@@ -72,6 +242,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.-->
     }
 
     #banner h1 {
+        display: inline-block;
+        color: #fff;
+    }
+
+    #banner h2 {
         display: inline-block;
         color: #fff;
         width: 30%;
@@ -102,7 +277,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.-->
 </style>
 
 <head>
-    <title>Web FPSci</title>
+    <title>Late Warp Web Demo</title>
     <link rel="icon" href="assets/images/icon.png">
 </head>
 
@@ -115,17 +290,42 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.-->
         <h1>Click to destroy the target!</h1>
     </div>
 
+    <div id="results">
+        <div id="lowlatresult"></div>
+        <div id="highlatresult"></div>
+        <div id='warpresult'></div>
+        <div id="latdiffresult"></div>
+        <div id='warpdiffresult'></div>
+        <div id='continuePrompt'>
+            <p>Press shift to close this window and enter sandbox mode</p>
+        </div>
+    </div>
+
     <!-- Full screen div for the application (w/ basic instructions) -->
     <div id="instructions">
         <div>
-            <h1>Click to Resume</h1>
-            Shoot: Left Mouse<br/>
-            Move: WASD (or arrows)<br/>
-            Run: SHIFT<br/>
-            Jump: SPACE<br/>
-            Look: Mouse</br>
-            Reset score banner: R
+            <h1 id="beginHeader">Click to Begin</h1>
+            <h1 id="resumeHeader">Click to Resume</h1>
+            <p id="baseInstructions">
+                Look: Mouse<br>
+                Shoot: Left Mouse<br>
+            </p>
+            <p id="trainingInstructions">
+                Up/Down Arrow: Change sensitivity (training only)
+            </p>
+            <p id="sandboxInstructions">
+                Move: WASD (or arrows)<br>
+                Run: SHIFT<br>
+                Jump: SPACE<br>
+                Reset score banner: R
+            </p>
         </div>
+    </div>
+
+    <!-- Sensitivity Adjustment Slider -->
+    <div id="sensSliderDiv" class="custom_slidercontainer">
+        <input type="range" min="0" max="1" step="0.01" value="0.2" class="custom_slider" id="sensSlider">
+        <p>Mouse Sensitivity (up/down arrows)</p>
     </div>
 </body>
 
@@ -138,4 +338,5 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.-->
 <script src="https://mrdoob.github.io/stats.js/build/stats.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.meshline/1.3.0/THREE.MeshLine.js"></script>
+
 <script src="js/fps.js"></script>

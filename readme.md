@@ -1,33 +1,43 @@
-# Javscript FPSci
-This documentation supports the "FPSci in a broswer" approach developed in this project.
+# 2021 SIGGRAPH Emerging Technologies Latency and Late Warp Demo
+This is a simple interactive experience intended to demonstrate the effects of changes in system latency on task performance in first-person targeting tasks, and possible corrections using late warp techniques.
 
-## Current Support
-Currently the application is not intended to support full experiments in the style of FPSci. Instead it focuses on programmable user experience for "feel"-based experiences. This means that many controls that would normally be hidden in the FPSci app are available in app here.
+## Experience
+The user begins by opening/reloading the page which automatically starts the "experiment" mode, wherein an initial training period, followed by 3 different latency conditions are provided. Each condition consists of a series of trials beginning with a red reference target (used to reset aim direction).
 
-In addition no output files are current produced. This could easily be changed in the future.
+Following completeing the three measurement conditions the application provides a brief summary display that compares:
+* The average (per target) completion time in each condition
+* The overall accuracy in each condition
+* The latency introduced by each condition
+* The difference of task completion time/accuracy caused by the condition
+
+After this the application enters a *sandbox* mode in which the user can control arbitrary parameters including frame rate and latency. In this mode the banner shown at the top of the screen can be used to capture average target time/accuracy metrics.
+
+### Latency Conditions
+We provide 3 latency conditions in our experiment:
+
+1. A ground truth condition that adds no (0) frames of latency between user input and output
+2. A delayed condition that adds ~80 ms of latency to the rendered view
+3. A condition that adds ~80 ms of latency to rendering that it then attempts to correct for with a late warp
 
 ## Running the Application
 The application works in a browser run from one of two modes:
 
-* File hosted mode: Works when not using assets with the application (i.e. no local files/images requires)
-* Hosted from `localhost` 
+* File hosted mode: Works when not using assets with the application (i.e. no local files/images required)
+* Hosted through `localhost` (or another web-hosting option) 
 
-### File Hosted
-To open the application in file hosted mode simply open the `index.html` page in a browser of your choice. Here all features will work *except* those that require local file contents.
+Since our current demo does not rely on any hosted assets it can be run in either mode, but we suggest file hosted as it is simpler.
 
-### Running with Local Host
-To run with local host the top-level directory for this project needs to be hosted through `localhost`. This can be done with Python using the `python -m http.server` command and a script ([`open_localhost.bat`](open_localhost.bat)) is provided to do exactly this (plus open the correct URL).
+To open the application in file hosted mode simply open the `Late Warp Web Demo.html` page in a browser of your choice (we suggest Chrome). Here all features will work *except* those that require local file contents.
 
-After hosting the directory through `localhost` the application can be accessed by visiting `http://localhost:8000/index.html`.
-
-## Supported Configuration
+## Supported Sandbox-mode Configuration
 A variety of configuration from the (Windows) FPSci application is supported in this application, including:
 
 * Rendering
     * Frame rate
     * Frame delay
-    * Late warp correction
+    * Use late warp?
     * Field of View (horizontal)
+    * Show the (score) banner?
     * Click-to-photon monitoring
 * Audio
     * Play fire audio?
@@ -83,3 +93,4 @@ A variety of configuration from the (Windows) FPSci application is supported in 
         * Has scope?
         * Toggle vs hold for scope
         * Field of view when scoped
+
