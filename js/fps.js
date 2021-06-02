@@ -37,6 +37,7 @@ var conditionsToRun = ["T", "0", "80", "80W"];
 
 var inTraining = true;              // Start in training mode
 var sandboxMode = false;            // Developer mode flag (direct to sandbox mode)
+var easyMode = false;               // Easier to hit targets
 var randomizeOrder = false;         // Randomize session order
 
 var defaultFrameRateHz = 60;        // Assumed default frame rate
@@ -47,7 +48,10 @@ if(urlParams.has('trainingTargets')){ trainingTargets = urlParams.get('trainingT
 if(urlParams.has('targetsPerCondition')){ targetsPerCondition = urlParams.get('targetsPerCondition'); }
 if(urlParams.has('conditions')){ conditionsToRun = urlParams.get('conditions').split(','); }
 if(urlParams.has('randomizeOrder')) { randomizeOrder = urlParams.get('randomizeOrder'); }
-if(urlParams.has('mode')) { sandboxMode = urlParams.get('mode') == 'sandbox'}
+if(urlParams.has('mode')) { 
+  sandboxMode = urlParams.get('mode') == 'sandbox';
+  easyMode = urlParams.get('mode') == 'easy';
+}
 
 if(sandboxMode) {                       // Developer overrides for testing (comes from configuration.js)
   conditionsToRun = [];             // Empty array goes straight into sandbox mode
@@ -275,6 +279,14 @@ var config = {
     fireSpread: 0.5,                // Fire spread (symmetric in degrees)                  
   }
 };
+
+// Change target size and speed if in easy mode
+if(easyMode){   
+  config.targets.minSpeed = 8;
+  config.targets.maxSpeed= 10;
+  config.targets.minSize = 1;
+  config.targets.maxSize = 2;
+}
 
 function exportConfig(){
   var a = document.createElement('a');
