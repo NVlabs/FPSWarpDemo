@@ -46,8 +46,8 @@ var config = {
     setFPS : getURLParamIfPresent('setFPS', false),               // Allow in application FPS setting (changes animation approach!)
     frameRate : getURLParamIfPresent('frameRate', 60),            // Frame rate to use (if setFPS is true only)
     frameDelay: getURLParamIfPresent('frameDelay', 0),            // Frame delay to apply to incoming user events
-    hFov : getURLParamIfPresent('hFoV', 103),                     // Horizontal camera field of view
-    showStatistics : getURLParamIfPresent('showStats', false),    // Show rendering statistics (frame rate/time and memory widget)
+    hFoV : getURLParamIfPresent('hFoV', 103),                     // Horizontal camera field of view
+    showStats : getURLParamIfPresent('showStats', false),         // Show rendering statistics (frame rate/time and memory widget)
     showBanner : getURLParamIfPresent('showBanner', true),        // Show the score banner
     fullscreen: getURLParamIfPresent('fullscreen', true),         // Show in fullscreen mode (if available)
     latewarp: getURLParamIfPresent('latewarp', false),            // Enable late warp
@@ -66,7 +66,7 @@ var config = {
   audio : { // Audio parameters
     fireSound : getURLParamIfPresent('playFireSound', true),       // Play shot sound?
     explodeSound : getURLParamIfPresent('playExplodeSound', true), // Play explode sound?
-    delayMs: getURLParamIfPresent('audioDelaMs', 0),               // Audio delay in milliseconds
+    delayMs: getURLParamIfPresent('audioDelayMs', 0),              // Audio delay in milliseconds
   },
 
   scene : { // Scene parameters
@@ -115,7 +115,7 @@ var config = {
     gap : getURLParamIfPresent('reticleGap', 0.01),                         // Reticle base gap size
     thickness : getURLParamIfPresent('reticleThickness', 0.15),             // Reticle thickness (ratio of size)
     expandedScale : getURLParamIfPresent('reticleExpandScale', 2),          // Reticle expanded scale
-    shrinkTime : getURLParamIfPresent('reticleShrinkTimeS', 0.3),           // Reticle shrink time after fire event
+    shrinkTime : getURLParamIfPresent('reticleShrinkTime', 0.3),           // Reticle shrink time after fire event
   },
 
   targets : { // Task target configuration
@@ -394,7 +394,7 @@ THREE.FirstPersonControls = function ( camera, scene, jumpHeight = config.player
     case GameInputEventType.TOGGLE_SCOPE:
       if(config.weapon.toggleScope) inScopeView = !inScopeView;
       else inScopeView = true;
-      camera.fov = (inScopeView ? config.weapon.scopeFov : config.render.hFov) / camera.aspect;
+      camera.fov = (inScopeView ? config.weapon.scopeFov : config.render.hFoV) / camera.aspect;
       camera.updateProjectionMatrix();
       break;
     case GameInputEventType.DESIRED_VELOCITY:
@@ -909,11 +909,11 @@ function makeGUI() {
 
   // Render controls
   var renderControls = gui.addFolder('Rendering');
-  renderControls.add(config.render, 'showStatistics').name('Show Stats').listen().onChange(function(value){
-    statsContainer.style.visibility = config.render.showStatistics ? 'visible' : 'hidden';
+  renderControls.add(config.render, 'showStats').name('Show Stats').listen().onChange(function(value){
+    statsContainer.style.visibility = config.render.showStats ? 'visible' : 'hidden';
   });
   renderControls.add(config.render, 'fullscreen').name('Fullscreen?').listen();
-  statsContainer.style.visibility = config.render.showStatistics ? 'visible' : 'hidden';
+  statsContainer.style.visibility = config.render.showStats ? 'visible' : 'hidden';
   renderControls.add(config.render, 'setFPS').name('Set FPS').listen().onChange(function(value){
     setGuiElementEnabled(fpsSlider, value);
   });
@@ -926,7 +926,7 @@ function makeGUI() {
   renderControls.add(config.render, 'latewarp').name('Late Warp?').listen().onChange(function(value){
     drawReticle();
   });
-  renderControls.add(config.render, 'hFov', 10, 130, 1).name('Field of View').listen().onChange(function(value){
+  renderControls.add(config.render, 'hFoV', 10, 130, 1).name('Field of View').listen().onChange(function(value){
     camera.fov = value / camera.aspect;
     camera.updateProjectionMatrix();
     drawC2P();
@@ -1104,7 +1104,7 @@ function makeGUI() {
   });
   var scopeControls = weaponControls.addFolder('Scope');
   scopeControls.add(config.weapon, 'toggleScope').name('Toggle Scope').listen();
-  scopeControls.add(config.weapon, 'scopeFov', 10, config.render.hFov).step(1).name('Scope FoV').listen();
+  scopeControls.add(config.weapon, 'scopeFov', 10, config.render.hFoV).step(1).name('Scope FoV').listen();
   setGuiElementEnabled(scopeControls, config.weapon.scoped);
   
   var importExport = gui.addFolder('Config Import/Export');
@@ -1204,7 +1204,7 @@ var processMouseDown = function(event){
   if(event.button == 2 && config.weapon.scoped) {
     if(config.weapon.toggleScope) inScopeView = !inScopeView;
     else inScopeView = true;
-    camera.fov = (inScopeView ? config.weapon.scopeFov : config.render.hFov) / camera.aspect;
+    camera.fov = (inScopeView ? config.weapon.scopeFov : config.render.hFoV) / camera.aspect;
     camera.updateProjectionMatrix();
   }
 };
@@ -1230,7 +1230,7 @@ var processMouseUp = function(event){
   }
   if(event.button == 2 && config.weapon.scoped && !config.weapon.toggleScope){
     inScopeView = false;
-    camera.fov = (inScopeView ? config.weapon.scopeFov : config.render.hFov) / camera.aspect;
+    camera.fov = (inScopeView ? config.weapon.scopeFov : config.render.hFoV) / camera.aspect;
     camera.updateProjectionMatrix();
   }
 }
