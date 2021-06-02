@@ -191,7 +191,7 @@ const GameInputEventType = Object.freeze({
   "DESIRED_CAMERA_ROTATION":{},
 });
 
-var RawInputState = function ( mouseSensitivity = config.player.mouseSensitivity, speed = config.player.speed ) {
+var RawInputState = function ( frameDelay = config.render.frameDelay, mouseSensitivity = config.player.mouseSensitivity, speed = config.player.speed ) {
   var scope = this;
   scope.enabled = false;
   scope.perFrameEventQueue = [];
@@ -200,7 +200,7 @@ var RawInputState = function ( mouseSensitivity = config.player.mouseSensitivity
   scope.playerVelocity = new THREE.Vector3();
   scope.cameraPosition = new THREE.Vector3();
   scope.cameraRotation = new THREE.Euler(0.0, 0.0, 0.0, "ZYX"); // Euler angles of the camera
-  scope.frameDelay = 0;
+  scope.frameDelay = Math.round(frameDelay);
 
   var moveForward = false; var moveBackward = false; var moveLeft = false; var moveRight = false;
   var run = false;
