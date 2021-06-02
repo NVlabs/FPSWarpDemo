@@ -34,9 +34,24 @@ var frameTimes = [];              // Recent frame times
 // Method to get from URL params (if present)
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
+
 function getURLParamIfPresent(name, defaultValue){
-  if(urlParams.has(name)) return defaultValue.constructor(urlParams.get(name));
-  else return defaultValue;
+  var value = defaultValue;
+  if(urlParams.has(name)) {
+    // Special case for handling boolean strings
+    if (typeof defaultValue == "boolean"){     
+        value = (urlParams.get(name).toLowerCase() == 'true');
+        // Warning message for other strings as booleans
+        if(!value && urlParams.get(name).toLowerCase() != 'false') {
+          console.warn('Value "%s" (specified for boolean URL parameter "%s") is not "true" or "false" but should be, interpreting as "false"!', urlParams.get(name), name);
+        }
+    }
+    else { // Default case for type conversion from default value
+      value = defaultValue.constructor(urlParams.get(name));
+    }
+    console.log(name, value);   // Log settings to the console
+  }
+  return value;
 }
 
 // Base config
