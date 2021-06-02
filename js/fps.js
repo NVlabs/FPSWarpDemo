@@ -28,36 +28,22 @@ const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 
 // Experiment Configuration
-var trainingTargets = 25;           // Number of trials to perform as training (at no latency)
-var targetsPerCondition = 15;       // Number of trials to perform per latency conditions
+var trainingTargets = getURLParamIfPresent('trainingTargets', 25);
+var targetsPerCondition = getURLParamIfPresent('targetsPerCondition', 15);
+var randomizeOrder = getURLParamIfPresent('randomizeOrder', false);
+var mode = getURLParamIfPresent('mode', 'normal').toLowerCase();
 
+// Update conditions based on URL parameter
 // Latency conditions in ms, ending in 'W' indicates a warp
 // 'T' is the 0-latency training session(s)
 var conditionsToRun = ["T", "0", "80", "80W"];
+if(urlParams.has('conditions')){ conditionsToRun = urlParams.get('conditions').split(','); }
 
 var inTraining = true;              // Start in training mode
-var sandboxMode = false;            // Developer mode flag (direct to sandbox mode)
-var easyMode = false;               // Easier to hit targets
-var randomizeOrder = false;         // Randomize session order
-
-var defaultFrameRateHz = 60;        // Assumed default frame rate
-
-// Update based on URL parameters
-if(urlParams.has('frameRateHz')) { defaultFrameRateHz = Number(urlParams.get('frameRateHz')); }
-if(urlParams.has('trainingTargets')){ trainingTargets = urlParams.get('trainingTargets'); }
-if(urlParams.has('targetsPerCondition')){ targetsPerCondition = urlParams.get('targetsPerCondition'); }
-if(urlParams.has('conditions')){ conditionsToRun = urlParams.get('conditions').split(','); }
-if(urlParams.has('randomizeOrder')) { randomizeOrder = urlParams.get('randomizeOrder'); }
-if(urlParams.has('mode')) { 
-  sandboxMode = urlParams.get('mode') == 'sandbox';
-  easyMode = urlParams.get('mode') == 'easy';
-}
-
-if(sandboxMode) {                       // Developer overrides for testing (comes from configuration.js)
+if(mode == 'sandbox') {                       // Developer overrides for testing (comes from configuration.js)
   conditionsToRun = [];             // Empty array goes straight into sandbox mode
   inTraining = false;               // Leave training mode
 }
-
 
 // Results arrays
 var avgCompTimeResults = {}; 
@@ -116,8 +102,8 @@ var nextCondition = function(){
 
     updateBanner();
 
-    if(!frameTimeValid) console.warn('Frame time profiling is not complete, assuming %fHz frame rate!', defaultFrameRateHz);
-    const frame_time = frameTimeValid ? frameTimes.avg() : 1000 / defaultFrameRateHz;   // Get the average frame time (assume 60Hz if not yet measured, fine as first condition is 0 ms of latency target)
+    if(!frameTimeValid) console.warn('Frame time profiling is not complete, assuming %fHz frame rate!', config.render.frameRate);
+    const frame_time = frameTimeValid ? frameTimes.avg() : 1000 / config.render.frameRate;   // Get the average frame time (assume 60Hz if not yet measured, fine as first condition is 0 ms of latency target)
     frames_to_delay = Math.round(delay_ms / frame_time)
 
     config.render.frameDelay = frames_to_delay;   // Update the latency condition
@@ -301,7 +287,7 @@ var config = {
 };
 
 // Change target size and speed if in easy mode
-if(easyMode){   
+if(mode == 'easy'){   
   config.targets.minSpeed = 8;
   config.targets.maxSpeed= 10;
   config.targets.minSize = 1;
