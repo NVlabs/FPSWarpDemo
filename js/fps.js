@@ -38,6 +38,9 @@ var mode = getURLParamIfPresent('mode', 'normal').toLowerCase();
 // 'T' is the 0-latency training session(s)
 var conditionsToRun = ["T", "0", "80", "80W"];
 if(urlParams.has('conditions')){ conditionsToRun = urlParams.get('conditions').split(','); }
+if(!conditionsValidForResultsDiplay(true)) {
+  console.warn("Provided conditions [%s] are not valid for results display! Must have the format [(optional)T, 0, X, XW]!", conditionsToRun.join(','));
+}
 
 var inTraining = true;              // Start in training mode
 if(mode == 'sandbox') {                       // Developer overrides for testing (comes from configuration.js)
@@ -76,7 +79,7 @@ var nextCondition = function(){
     dat.GUI.toggleHide();                             // Show "sandbox" controls
     sensitivityDiv.style.visibility = 'hidden';       // Hide the sensitivity slider (now in sandbox controls)
     expComplete = true;
-    if(conditionsToRun.length > 2) showResults();    // This is specific to 3 condition approach
+    if(conditionsValidForResultsDiplay()) showResults();    // This is specific to 3 condition approach
   }
   else{
     const nextCondition = conditionsToRun[conditionIdx];
@@ -110,6 +113,32 @@ var nextCondition = function(){
     rawInputState.frameDelay = frames_to_delay;
   }
   drawReticle();
+}
+
+function conditionsValidForResultsDiplay(warn=false) {
+  const sortedConds = [...conditionsToRun].filter(e => e != 'T').sort(); // This should sort low latency, high latency, high latency w/ warp
+  
+  if(sortedConds.length != 3) { // Require 3 conditions
+    if(warn) console.warn("Must provide exactly 3 (non-training) latency conditions (%s provided)", sortedConds.length);
+    return false;
+  }
+  const lowLat = sortedConds[0]; const highLat = sortedConds[1]; const warp = sortedConds[2];
+  const warpLat = warp.substr(0, warp.length-1);
+
+  if(lowLat != "0") { // Require minimum latency condition to add no latency
+    if(warn) console.warn("Minimum latency condition must be 0, not %s ms", lowLat);
+    return false;                              
+  }
+  if(!warp.endsWith('W')) { // Require at least 1 warp condition
+    if(warn) console.warn("Warp condition (ending in \"W\") must be provided");
+    return false;                         
+  }
+  if(highLat != warpLat) { // High latency and warp condition don't match
+    if(warn) console.warn("High latency and warp condition must have the same latency (%s != %s)", highLat, warpLat);
+    return false;     
+  }
+  
+  return true; // Valid for display
 }
 
 const lowlatresult = document.getElementById("lowlatresult");
