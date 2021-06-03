@@ -146,8 +146,10 @@ var config = {
     
     minSpawnDistance: getURLParamIfPresent('targetMinSpawnDistance', 20),   // Minimum target spawn distance
     maxSpawnDistance: getURLParamIfPresent('targetMaxSpawnDistance', 30),   // Maximum target spawn distance
-    spawnAzimRangeDeg : getURLParamIfPresent('targetSpawmRangeAzim', 35),   // The ± range of target spawn azimuth angle (relative to current view direction)
-    spawnElevRangeDeg : getURLParamIfPresent('targetSpawnRangeElev', 10),   // The ± range of target spawn elevation angle (relative to current view direction)
+    spawnAzimMinDeg : getURLParamIfPresent('targetSpawnMinAzim', 20),       // The minimum target spawn azimuth angle (symmetric, relative to current view direction)
+    spawnAzimMaxDeg : getURLParamIfPresent('targetSpawnMaxAzim', 35),       // The maximum target spawn azimuth angle (symmetric, relative to current view direction)
+    spawnElevMinDeg : getURLParamIfPresent('targetSpawnMinElev', 3),        // The minimum target spawn elevation angle (symmetric, relative to current view direction)
+    spawnElevMaxDeg : getURLParamIfPresent('targetSpawnMaxElev', 10),       // The minimum target spawn elevation angle (symmetric, relative to current view direction)
 
     collisionDetection : getURLParamIfPresent('targetCollision', true),           // Target collision detection (bounce)
     collisionDistance : getURLParamIfPresent('targetCollisionDistance', 3),       // Target collision distance
@@ -631,6 +633,9 @@ document.addEventListener( 'keydown', keyDownHandler, false);
  */
 function randInRange(min, max) { return (max - min) * Math.random() + min; }
 
+/** Random sign (±1) */
+function randSign() { return Math.random() < 0.5 ? -1 : 1; }
+
 // Target management
 var targets = [];
 
@@ -647,10 +652,12 @@ function spawnTarget(reference = false){
     makeTarget(position, config.targets.reference.size, new THREE.Vector3(0,0,0), new THREE.Color(1,0,0));
   }
   else{
+    var cameraDir = camera.getWorldDirection(new THREE.Vector3());
+    var sign = cameraDir.y > 0.5 ? -1 : randSign();                   // Bias the sign of the random angle when camera elevation is high
     // Spawn a "real" target
-    const spawnAzimRad = Math.PI / 180 * config.targets.spawnAzimRangeDeg * (2 * (Math.random() - 0.5));
-    const spawnElevRad = Math.PI / 180 * config.targets.spawnElevRangeDeg * (2 * (Math.random() - 0.5));
-    const spawnDir = camera.getWorldDirection(new THREE.Vector3()).applyAxisAngle(new THREE.Vector3(0,1,0), spawnAzimRad).applyAxisAngle(new THREE.Vector3(0,0,1), spawnElevRad);
+    const spawnAzimRad = Math.PI / 180 * sign * randInRange(config.targets.spawnAzimMinDeg, config.targets.spawnAzimMaxDeg);
+    const spawnElevRad = Math.PI / 180 * sign * randInRange(config.targets.spawnElevMinDeg, config.targets.spawnElevMaxDeg);
+    const spawnDir = cameraDir.applyAxisAngle(new THREE.Vector3(0,1,0), spawnAzimRad).applyAxisAngle(new THREE.Vector3(0,0,1), spawnElevRad);
     const distance = config.targets.minSpawnDistance + Math.random() * (config.targets.maxSpawnDistance - config.targets.minSpawnDistance);
     var position = new THREE.Vector3().addVectors(fpsControls.position(), new THREE.Vector3(distance*spawnDir.x, distance*spawnDir.y, distance*spawnDir.z));
     const size = randInRange(config.targets.minSize, config.targets.maxSize);
@@ -1068,8 +1075,18 @@ function makeGUI() {
   targetColorControls.addColor(config.targets, 'fullHealthColor').name('Full Health').listen();
   targetColorControls.addColor(config.targets, 'minHealthColor').name('Min Health').listen();
   var targetSpawnControls = targetControls.addFolder('Spawn Location');
-  targetSpawnControls.add(config.targets, 'spawnAzimRangeDeg', 0, 90).name('Spawn Azim').listen();
-  targetSpawnControls.add(config.targets, 'spawnElevRangeDeg', 0, 90).name('Spawn Elev').listen();
+  targetSpawnControls.add(config.targets, 'spawnAzimMinDeg', 0, 90).name('Min Spawn Azim').listen().onChange(function(value) {
+    if(value > config.targets.spawnAzimMaxDeg) config.targets.spawnAzimMaxDeg = value;
+  });
+  targetSpawnControls.add(config.targets, 'spawnAzimMaxDeg', 0, 90).name('Max Spawn Azim').listen().onChange(function(value){
+    if(value < config.targets.spawnAzimMinDeg) config.targets.spawnAzimMinDeg = value;
+  });
+  targetSpawnControls.add(config.targets, 'spawnElevMinDeg', 0, 90).name('Min Spawn Elev').listen().onChange(function(value){
+    if(value > config.targets.spawnElevMaxDeg) config.targets.spawnElevMaxDeg = value;
+  });
+  targetSpawnControls.add(config.targets, 'spawnElevMaxDeg', 0, 90).name('Max Spawn Elev').listen().onChange(function(value){
+    if(value < config.targets.spawnElevMinDeg) config.targets.spawnElevMinDeg = value;
+  });
   targetSpawnControls.add(config.targets, 'minSpawnDistance', 0.1, 100).name('Min Distance').listen().onChange(function(value) {
     if(value > config.targets.maxSpawnDistance) config.targets.maxSpawnDistance = value;
   });
