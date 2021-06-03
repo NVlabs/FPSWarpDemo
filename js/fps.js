@@ -137,9 +137,11 @@ var showResults = function(){
   warpdiffresult.innerHTML = `<p>${warp_dt.toFixed(1)} ms improvement of avearge task time</p><p>${warp_dAcc.toFixed(1)}% improvement in accuracy</p>`;
 
   results.style.visibility = 'visible';
-  if (fpsControls.enabled)
+  if (fpsControls.enabled) {
     rawInputState.enable(false);
+  }
   fpsControls.enabled = false;
+  document.exitPointerLock();
   bannerDiv.style.visibility = 'hidden';
 }
 
@@ -672,15 +674,13 @@ if ( havePointerLock ) {
    */
   var pointerlockchange = function ( event ) {
     if ( document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element ) {
-      if (!fpsControls.enabled)
-        rawInputState.enable(true);
+      if (!fpsControls.enabled) rawInputState.enable(true);
       fpsControls.enabled = true;
       instructions.style.display = 'none';
     } else {
-      if (fpsControls.enabled)
-        rawInputState.enable(false);
+      if (fpsControls.enabled) rawInputState.enable(false);
       fpsControls.enabled = false;
-      instructions.style.display = '-webkit-box';
+      if(results.style.visibility != 'visible') instructions.style.display = '-webkit-box';
     }
     //dat.GUI.toggleHide();
   };
@@ -745,6 +745,7 @@ var keyDownHandler = function (event) {
         if (!fpsControls.enabled)
           rawInputState.enable(true);
         fpsControls.enabled = true;
+        document.body.requestPointerLock();
         bannerDiv.style.visibility = 'visible';
         results.style.visibility = 'hidden';
       }
