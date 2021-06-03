@@ -100,8 +100,10 @@ Typically JSON parameter names are _very_ similar to URL parameter names, but of
     * Spawn position (uniformly randomized in range)
         * Min spawn distance: `targetMinSpawnDistance` (`Number`): `20`
         * Max spawn distance: `targetMaxSpawnDistance` (`Number`): `30`
-        * Azimuth spawn angle (± relative to most recent player view): `targetSpawnRangeAzim` (`Number` degrees) = `35`
-        * Elevation spawn angle (± relative to most recent player view): `targetSpawnRangeElev` (`Number` degrees) = `10`
+        * Max azimuth spawn angle (± relative to most recent player view): `targetSpawnMaxAzim` (`Number` degrees) = `35`
+        * Min azimuth spawn angle (± relative to most recent player view): `targetSpawnMinAzim` (`Number` degrees) = `20`
+        * Max elevation spawn angle (± relative to most recent player view): `targetSpawnMaxElev` (`Number` degrees) = `10`
+        * Min elevation spawn angle (± relative to most recent player view): `targetSpawnMinElev` (`Number` degrees) = `3`
     * Reference target (red target used to reset aim direction on reload/start of trial)
         * Size: `refTargetSize` (`Number`) = `1`
         * Distance: `refTargetDistance` (`Number`) = `30`
