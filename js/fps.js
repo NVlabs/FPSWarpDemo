@@ -246,7 +246,7 @@ var config = {
   targets : { // Task target configuration
     count: getURLParamIfPresent('targetCount', 1),                              // Number of simultaneous targets         
     minSize : getURLParamIfPresent('targetMinSize', 0.5),                       // Minimum target size (uniform random in range)
-    maxSize : getURLParamIfPresent('targetMaxSize', 3),                         // Maxmium target size (uniform random in range)
+    maxSize : getURLParamIfPresent('targetMaxSize', 1.5),                       // Maxmium target size (uniform random in range)
     minSpeed: getURLParamIfPresent('targetMinSpeed', 5),                        // Minimum target speed (uniform random in range)
     maxSpeed : getURLParamIfPresent('targetMaxSpeed', 15),                      // Maximum target speed (uniform random in range)
     minChangeTime : getURLParamIfPresent('targetMinChangeTime', 1),             // Minimum target direction change time (uniform random in range)
@@ -290,8 +290,8 @@ var config = {
 if(mode == 'easy'){   
   config.targets.minSpeed = 8;
   config.targets.maxSpeed= 10;
-  config.targets.minSize = 1;
-  config.targets.maxSize = 2;
+  config.targets.minSize = 2;
+  config.targets.maxSize = 2.5;
 }
 
 function exportConfig(){
