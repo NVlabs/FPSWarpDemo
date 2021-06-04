@@ -69,7 +69,12 @@ const sensitivitySlider = document.getElementById("sensSlider");
 const sensitivityDiv = document.getElementById("sensSliderDiv");
 sensitivitySlider.oninput = function() {
   config.player.mouseSensitivity = this.value;
-  rawInputState.mouseSensitivity = this.value;
+}
+
+const invertYCheckbox = document.getElementById("invertYCheckbox");
+invertYCheckbox.oninput = function() {
+  config.player.invertY = this.checked;
+  console.log(config.player.invertY);
 }
 
 var frames_to_delay;
@@ -792,8 +797,13 @@ var keyDownHandler = function (event) {
         sensitivitySlider.oninput();
       }
       break;
-    }
-
+    case 73: // "I" key press (toggle mouse inversion)
+      if(inTraining){
+        invertYCheckbox.checked = !invertYCheckbox.checked;
+        invertYCheckbox.oninput();
+      }
+      break;
+  }
 }
 document.addEventListener( 'keydown', keyDownHandler, false);
 
