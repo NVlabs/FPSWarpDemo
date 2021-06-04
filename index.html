@@ -190,6 +190,74 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.-->
         text-shadow: 1px 1px 1px #9E9E9E;
     }
 
+    .checkbox_label{
+        position: absolute;
+        left: 10px;
+        padding-left: 35px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        height: 25px;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    /* Hide the "actual" checkbox input */
+    .checkbox_label input {
+        position: absolute;
+        cursor: pointer;
+        opacity: 0;
+        height: 0; 
+        width: 0;
+    }
+
+    /* Draw a custom checkmark */
+    .checkmark{
+        position: absolute;
+        top: 78%;
+        left: 0;
+        height: 25px;
+        width: 25px;
+        background-color: #000;
+        opacity: 0.3;
+    }
+
+    .checkmark:after {
+        content: "";
+        position: absolute;
+        display: none;
+    }
+
+    /* On mouse-over, add a grey background color */
+    .checkbox_label:hover input ~ .checkmark {
+        background-color: #000;
+        opacity: 1.0;
+    }
+
+    /* On checked, set to active color */
+    .checkbox_label input:checked ~ .checkmark {
+        background-color: #76b900;
+    }
+
+    /* Show the checkmark when checked */
+    .checkbox_label input:checked ~ .checkmark:after {
+        display: block;
+    }
+
+    /* Style the checkmark check */
+    .checkbox_label .checkmark:after {
+        left: 9px;
+        top: 5px;
+        width: 5px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 3px 3px 0;
+        -webkit-transform: rotate(45deg);
+        -ms-transform: rotate(45deg);
+        transform: rotate(45deg);
+    }
+
     .custom_slider{
         -webkit-appearance: none;
 
@@ -266,7 +334,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.-->
     }
 
     .dg .cr.boolean {
-    border-left: 3px solid #76B900 !important;
+        border-left: 3px solid #76B900 !important;
     }
 
     .dg .cr.number input[type=text] {
@@ -311,7 +379,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.-->
                 Shoot: Left Mouse<br>
             </p>
             <p id="trainingInstructions">
-                Up/Down Arrow: Change sensitivity (training only)
+                Up/Down Arrow: Change sensitivity (training only)<br/>
+                I: Invert Y (pitch) sensitivity
             </p>
             <p id="sandboxInstructions">
                 Move: WASD (or arrows)<br>
@@ -324,6 +393,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.-->
 
     <!-- Sensitivity Adjustment Slider -->
     <div id="sensSliderDiv" class="custom_slidercontainer">
+        <label class="checkbox_label">
+            <input type="checkbox" class="custom_checkbox" id="invertYCheckbox">
+            <span class="checkmark"></span>
+            <p>Invert Y?</p>
+        </label>
         <input type="range" min="0" max="1" step="0.01" value="0.2" class="custom_slider" id="sensSlider">
         <p>Mouse Sensitivity (up/down arrows)</p>
     </div>

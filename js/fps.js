@@ -69,7 +69,12 @@ const sensitivitySlider = document.getElementById("sensSlider");
 const sensitivityDiv = document.getElementById("sensSliderDiv");
 sensitivitySlider.oninput = function() {
   config.player.mouseSensitivity = this.value;
-  rawInputState.mouseSensitivity = this.value;
+}
+
+const invertYCheckbox = document.getElementById("invertYCheckbox");
+invertYCheckbox.oninput = function() {
+  config.player.invertY = this.checked;
+  console.log(config.player.invertY);
 }
 
 var frames_to_delay;
@@ -259,6 +264,7 @@ var config = {
   player : { // Player configuration
     speed : getURLParamIfPresent('playerSpeed', 500),                       // Speed of player motion
     mouseSensitivity : getURLParamIfPresent('mouseSensitivity', 0.2),       // Mouse sensitivty for view direction
+    invertY: getURLParamIfPresent('invertY', false),                        // Y inversion
     height : getURLParamIfPresent('playerHeight', 5),                       // Player view height
     jumpHeight : getURLParamIfPresent('playerJumpHeight', 250),             // Player jump height
     collisionDetection : getURLParamIfPresent('playerCollision', true),     // Perform collision detection within the scene? 
@@ -357,12 +363,11 @@ const GameInputEventType = Object.freeze({
   "DESIRED_CAMERA_ROTATION":{},
 });
 
-var RawInputState = function ( frameDelay = config.render.frameDelay, mouseSensitivity = config.player.mouseSensitivity, speed = config.player.speed ) {
+var RawInputState = function (frameDelay = config.render.frameDelay) {
   var scope = this;
   scope.enabled = false;
   scope.perFrameEventQueue = [];
   scope.frameEvents = []
-  scope.mouseSensitivity = mouseSensitivity;
   scope.playerVelocity = new THREE.Vector3();
   scope.cameraPosition = new THREE.Vector3();
   scope.cameraRotation = new THREE.Euler(0.0, 0.0, 0.0, "ZYX"); // Euler angles of the camera
@@ -420,10 +425,10 @@ var RawInputState = function ( frameDelay = config.render.frameDelay, mouseSensi
     var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || false;
     var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || false;
 
-    scope.cameraRotation.y -= movementX * scope.mouseSensitivity / 100;
+    scope.cameraRotation.y -= movementX * config.player.mouseSensitivity / 100;
     if (scope.cameraRotation.y > 2*Math.PI) scope.cameraRotation.y -= 2*Math.PI;
     //if (scope.cameraRotation.y < -Math.PI) scope.cameraRotation.y += Math.PI;
-    scope.cameraRotation.x -= movementY * scope.mouseSensitivity / 100;
+    scope.cameraRotation.x -= movementY * config.player.mouseSensitivity / 100 * (config.player.invertY ? -1 : 1);
     scope.cameraRotation.x = Math.max( -Math.PI/2, Math.min( Math.PI/2, scope.cameraRotation.x ) );
     scope.frameEvents.push({"type": GameInputEventType.DESIRED_CAMERA_ROTATION, "data": scope.cameraRotation.clone()});
   };
@@ -792,8 +797,13 @@ var keyDownHandler = function (event) {
         sensitivitySlider.oninput();
       }
       break;
-    }
-
+    case 73: // "I" key press (toggle mouse inversion)
+      if(inTraining){
+        invertYCheckbox.checked = !invertYCheckbox.checked;
+        invertYCheckbox.oninput();
+      }
+      break;
+  }
 }
 document.addEventListener( 'keydown', keyDownHandler, false);
 
@@ -1113,8 +1123,8 @@ function makeGUI() {
   var fpsSlider = renderControls.add(config.render, 'frameRate', 1, 360, 1).name('Frame Rate').listen();
   setGuiElementEnabled(fpsSlider, config.render.setFPS);
   renderControls.add(config.render, 'frameDelay', 0, 100, 1).name('Frame Delay').listen().onChange(function(value) {
-    rawInputState.frameDelay = Math.round(value);
     config.render.frameDelay = Math.round(value);
+    rawInputState.frameDelay = config.render.frameDelay;
   });
   renderControls.add(config.render, 'latewarp').name('Late Warp?').listen().onChange(function(value){
     drawReticle();
@@ -1206,9 +1216,8 @@ function makeGUI() {
 
   // Player controls
   var playerControls = gui.addFolder('Player');
-  playerControls.add(config.player, 'mouseSensitivity', 0, 1).step(0.01).name('Mouse Sens.').listen().onChange(function(value) {
-    rawInputState.mouseSensitivity = value;
-  });
+  playerControls.add(config.player, 'mouseSensitivity', 0, 1).step(0.01).name('Mouse Sens.').listen();
+  playerControls.add(config.player, 'invertY').name('Invert Y?').listen();
   playerControls.add(config.player, 'height', 1, 100).step(1).name('Play Height').listen().onChange(function(value) {
     fpsControls.height = value;
     camera.updateProjectionMatrix();
@@ -1908,7 +1917,7 @@ function animate() {
 
     if(config.render.latewarp) {
       // Latewarp here
-      const recentCameraToWorld = new THREE.Matrix4().makeRotationFromEuler(rawInputState.cameraRotation);;
+      const recentCameraToWorld = new THREE.Matrix4().makeRotationFromEuler(rawInputState.cameraRotation);
       const recentWorldToCamera = new THREE.Matrix4().getInverse(recentCameraToWorld);
       var oldWorldToCamera = camera.matrixWorld.clone();
       oldWorldToCamera.setPosition(0.0, 0.0, 0.0);
