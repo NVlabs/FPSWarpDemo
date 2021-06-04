@@ -75,6 +75,7 @@ Typically JSON parameter names are _very_ similar to URL parameter names, but of
 * Player
     * Movement Speed: `playerSpeed` (`Number`) = `500`
     * Mouse sensitivity (arbitrary units): `mouseSensitivity` (`Number`) = `0.2`
+    * Y inversion: `invertY` (`Boolean`) = `False`
     * Height: `playerHeight` (`Number`) = `5`
     * Jump Height: `playerJumpHeight` (`Number`) = `250`
     * Collision detection (within the scene): `playerCollision` (`Boolean`) = `True`
