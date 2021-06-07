@@ -254,6 +254,7 @@ var RawInputState = function (frameDelay = config.render.frameDelay) {
 
   scope.onMouseDown = function(event) {
     if(event.button == 0){
+      if(config.render.c2p.mode == 'immediate') c2p.material.color = new THREE.Color(config.render.c2p.downColor);    // Handle "immediate" updates for click-to-photon
       scope.frameEvents.push({"type": GameInputEventType.FIRE});
     }
     if(event.button == 2) {
@@ -264,6 +265,10 @@ var RawInputState = function (frameDelay = config.render.frameDelay) {
   scope.onMouseUp = function(event) {
     if(event.button == 0){
       scope.frameEvents.push({"type": GameInputEventType.FIRE_END});
+      if(config.render.c2p.mode == 'immediate') c2p.material.color = new THREE.Color(config.render.c2p.upColor);
+    }
+    if(event.button == 2 && !config.weapon.toggleScope) {
+      scope.frameEvents.push({"type": GameInputEventType.TOGGLE_SCOPE});
     }
   }
 
@@ -398,9 +403,11 @@ THREE.FirstPersonControls = function ( camera, scene, jumpHeight = config.player
     switch (event.type) {
     case GameInputEventType.FIRE:
       clickShot = true;
+      if(config.render.c2p.mode == 'delayed') c2p.material.color = new  THREE.Color(config.render.c2p.downColor);
       break;
     case GameInputEventType.FIRE_END:
       clickShot = false;
+      if(config.render.c2p.mode == 'delayed') c2p.material.color = new THREE.Color(config.render.c2p.upColor);
       break;
     case GameInputEventType.JUMP:
       // TODO: match run+jump height boost
@@ -409,10 +416,11 @@ THREE.FirstPersonControls = function ( camera, scene, jumpHeight = config.player
       canJump = false;
       break;
     case GameInputEventType.TOGGLE_SCOPE:
-      if(config.weapon.toggleScope) inScopeView = !inScopeView;
-      else inScopeView = true;
-      camera.fov = (inScopeView ? config.weapon.scopeFov : config.render.hFoV) / camera.aspect;
-      camera.updateProjectionMatrix();
+      if(config.weapon.scoped){
+        inScopeView = !inScopeView;
+        camera.fov = (inScopeView ? config.weapon.scopeFov : config.render.hFoV) / camera.aspect;
+        camera.updateProjectionMatrix();
+      }
       break;
     case GameInputEventType.DESIRED_VELOCITY:
       desiredVelocity = event.data;
@@ -1210,65 +1218,6 @@ function onWindowResize() {
 // Event listeners for mouse click
 var clickShot = false;                            // Did a click occur?
 var inScopeView = false;                          // Are we in a scoped view?
-
-/**
- * Mouse down event handler (event enqueue)
- * @param {Mouse down event} event 
- */
-var onMouseDown = function(event) {
-  if(fpsControls.enabled === false) return;               // Ignore if controls aren't active
-  if(event.button == 0){                                  // Check for "fire" events
-    if(config.render.c2p.mode == 'immediate') {           
-      c2p.material.color = new THREE.Color(config.render.c2p.downColor);    // Handle "immediate" updates for click-to-photon
-    }
-  }
-}
-
-/**
- * Update state based on (queued) mouse down event
- * @param {Mouse down event} event
- */
-var processMouseDown = function(event){
-  if(event.button == 0) {
-    if(config.render.c2p.mode == 'delayed') c2p.material.color = new  THREE.Color(config.render.c2p.downColor);
-  }
-  if(event.button == 2 && config.weapon.scoped) {
-    if(config.weapon.toggleScope) inScopeView = !inScopeView;
-    else inScopeView = true;
-    camera.fov = (inScopeView ? config.weapon.scopeFov : config.render.hFoV) / camera.aspect;
-    camera.updateProjectionMatrix();
-  }
-};
-
-/**
- * Mouse up event handler (event enqueue)
- * @param {Mouse up event} event 
- */
-var onMouseUp = function(event) {
-  if(fpsControls.enabled === false) return;
-  if(event.button == 0){
-    if(config.render.c2p.mode == 'immediate') c2p.material.color = new THREE.Color(config.render.c2p.upColor);
-  }
-}
-
-/**
- * Update state based on (queued) mouse up event
- * @param {Mouse up event} event 
- */
-var processMouseUp = function(event){
-  if(event.button == 0) {
-    if(config.render.c2p.mode == 'delayed') c2p.material.color = new THREE.Color(config.render.c2p.upColor);
-  }
-  if(event.button == 2 && config.weapon.scoped && !config.weapon.toggleScope){
-    inScopeView = false;
-    camera.fov = (inScopeView ? config.weapon.scopeFov : config.render.hFoV) / camera.aspect;
-    camera.updateProjectionMatrix();
-  }
-}
-
-// Event listeners for mouse up/down
-document.addEventListener( 'mousedown', onMouseDown, false );
-document.addEventListener( 'mouseup', onMouseUp, false);
 
 // Create the reticle
 var reticleGroup = new THREE.Group();   // Group for storing reticle elements
